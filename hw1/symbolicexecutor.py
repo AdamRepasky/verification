@@ -7,10 +7,9 @@ from z3 import *
 class SymbolicExecutionState(ExecutionState):
     def __init__(self, pc):
         super().__init__(pc)
-		
-		solver = Solver()
+       	
+        solver = Solver()
         # add constraints here
-
         # dont forget to create _copy_ of attributes
         # when forking states (i.e., dont use
         # new.attr = old.attr, that would
@@ -31,10 +30,9 @@ class SymbolicExecutionState(ExecutionState):
         n = ExecutionState(self.pc)
         n.variables = self.variables.copy()
         n.values = self.values.copy()
+        n.solver = self.solver.copy()
+        n.error = self.error
         
-		n.solver = self.solver.copy()
-		n.error = self.error
-		
         return n
     def read(self, var):
         assert isinstance(var, Variable)
@@ -43,24 +41,25 @@ class SymbolicExecutionState(ExecutionState):
     def write(self, var, value):
         assert isinstance(var, Variable)
         # in symbolic execution, value is expression, not int...
-        assert isinstance(value, Int)
+        assert isinstance(value, (ArithRef, BoolRef))
         self.variables[var] = value
 
     def set(self, lhs, val):
         assert isinstance(lhs, Instruction)
         # in symbolic execution, val is expression, not int...
-        assert isinstance(val, Int)
+        print(type(val))
+        assert isinstance(val, (ArithRef, BoolRef))
         self.values[lhs] = val
-		
+
 class SymbolicExecutor(Interpreter):
     def __init__(self, program):
         super().__init__(program)
         self.executed_paths = 0
         self.errors = 0
-		self.next_char = 96
+        self.next_char = 96
     def getNextChar():
-	    self.next_char += 1
-	    return chr(self.next_char)
+        self.next_char += 1
+        return chr(self.next_char)
     def executeJump(self, state):
         jump = state.pc
         condval = state.eval(jump.get_condition())
@@ -80,7 +79,7 @@ class SymbolicExecutor(Interpreter):
         if ty == Instruction.LOAD:
             value = state.read(op)
             if value is None:
-			    state.write(op, Int(self.getNextChar()))
+                state.write(op, Int(self.getNextChar()))
                 #state.error = f"Reading uninitialied variable: {op.get_name()}"
             state.set(instruction, value)
         elif ty == Instruction.STORE:
@@ -219,9 +218,9 @@ class SymbolicExecutor(Interpreter):
         while state:
             state = self.executeInstruction(state)
             if state and state.error:
-			    #TODO pop last constraint and continue in other branch maybe increase execued_paths too
-			    state.error = None
-			    self.errors += 1
+                #TODO pop last constraint and continue in other branch maybe increase execued_paths too
+                state.error = None
+                self.errors += 1
 
         #TODO?
 
