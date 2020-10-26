@@ -10,7 +10,7 @@ class SymbolicExecutionState(ExecutionState):
     def __init__(self, pc):
         super().__init__(pc)
        	
-		#constraints collection 
+        #constraints collection 
         self.constraints = []
 
     def eval(self, v):
@@ -61,8 +61,8 @@ class SymbolicExecutor(Interpreter):
         self.errors = 0
         self.next_char = 96 #idk about this for sure
         self.solver = Solver()
-		
-		#states waiting to be executed
+
+        #states waiting to be executed
         self.stateStack = []
         self.branchSelected = False 
     def getNextChar(self):
@@ -72,7 +72,7 @@ class SymbolicExecutor(Interpreter):
     def executeJump(self, state):
         jump = state.pc
         condval = state.eval(jump.get_condition())
-		
+
         if condval is None:
             state.error = f"Using unknown value: {jump.get_condition()}"
             return state
@@ -87,9 +87,9 @@ class SymbolicExecutor(Interpreter):
             
             # push negated constraint into other branch state
             otherState.constraints.append(Not(condval))
-			
-			# add states to stack; second member of tuple describes which block of jump
-			# will be accessed if constraints of state are satisfiable
+
+            # add states to stack; second member of tuple describes which block of jump
+            # will be accessed if constraints of state are satisfiable
             self.stateStack.append((state, 0))
             self.stateStack.append((otherState, 1))
         self.branchSelected = False
@@ -134,7 +134,7 @@ class SymbolicExecutor(Interpreter):
         if ty == Instruction.MUL:
             result = a * b
         if ty == Instruction.DIV:
-		    #did not do branching here since it was stated it is not necessary for this homework
+        #did not do branching here since it was stated it is not necessary for this homework
             if b == Int(0):
                 state.error = f"Division by 0: {instruction}"
                 return state
@@ -143,7 +143,7 @@ class SymbolicExecutor(Interpreter):
         state.set(instruction, result)
 
         return state
-		
+
     #overridden to not print, just check values
     def executePrint(self, state):
         instruction = state.pc
@@ -170,10 +170,10 @@ class SymbolicExecutor(Interpreter):
             return state
         #if condval is symbolic
         
-		# braching happens here too but its not like in executeJump since
-		# only one of paths (constraints + assert constraint is sat) can continue
-		# other one (constraints + negation of assert constraint is sat) can not (raise error but counts as a path)
-		# its solved inside this function since we do not need to add anything to stack
+        # braching happens here too but its not like in executeJump since
+        # only one of paths (constraints + assert constraint is sat) can continue
+        # other one (constraints + negation of assert constraint is sat) can not (raise error but counts as a path)
+        # its solved inside this function since we do not need to add anything to stack
         negState = state.copy()
         negState.constraints.append(Not(condval))
         self.solver.reset()
@@ -224,7 +224,7 @@ class SymbolicExecutor(Interpreter):
                 return None
 
         return state
-		
+
     def popNextSatState(self):
         self.solver.reset()
         pop = self.stateStack.pop()
@@ -242,7 +242,7 @@ class SymbolicExecutor(Interpreter):
             state = None
             self.branchSelected = False
         return state
-		
+
     def run(self):
         entryblock = program.get_entry()
         state = SymbolicExecutionState(entryblock[0])
@@ -266,7 +266,7 @@ class SymbolicExecutor(Interpreter):
             elif state == None and not self.branchSelected and len(self.stateStack) > 0:
                 while (state == None and len(self.stateStack) > 0):
                     state = self.popNextSatState()
-					
+
         print(f"Executed paths: {self.executed_paths}")
         print(f"Error paths: {self.errors}")
 
