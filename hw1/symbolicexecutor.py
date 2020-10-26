@@ -4,17 +4,14 @@ from language import Instruction, Variable, Cmp
 from interpreter import ExecutionState, Interpreter
 from z3 import *
 
+# each branch of symbolic execution has its own SymbolicExecutionState
+# object with assigned constraints 
 class SymbolicExecutionState(ExecutionState):
     def __init__(self, pc):
         super().__init__(pc)
        	
+		#constraints collection 
         self.constraints = []
-        #self.solver = Solver()
-        # add constraints here
-        # dont forget to create _copy_ of attributes
-        # when forking states (i.e., dont use
-        # new.attr = old.attr, that would
-        # only create a reference)
 
     def eval(self, v):
         if isinstance(v, bool):
@@ -26,22 +23,16 @@ class SymbolicExecutionState(ExecutionState):
         assert isinstance(v, Instruction)
         return self.values.get(v)
     def copy(self):
-        # must be overriden for symbolic execution
-        # if you add new attributes
         n = SymbolicExecutionState(self.pc)
         n.variables = self.variables.copy()
         n.values = self.values.copy()
-        #n.solver = self.solver.copy()
+
         n.constraints = self.constraints.copy()
         n.error = self.error
         
         return n
-    def read(self, var):
-        assert isinstance(var, Variable)
-        return self.variables.get(var)
 
     def write(self, var, value):
-        ##print(var, value)
         assert isinstance(var, Variable)
         # in symbolic execution, value is expression, not int...
         assert isinstance(value, (ArithRef, IntNumRef, BoolRef))
@@ -50,7 +41,6 @@ class SymbolicExecutionState(ExecutionState):
     def set(self, lhs, val):
         assert isinstance(lhs, Instruction)
         # in symbolic execution, val is expression, not int...
-        #print(type(val))
         assert isinstance(val, (ArithRef, IntNumRef, BoolRef))
         self.values[lhs] = val
 
@@ -69,8 +59,10 @@ class SymbolicExecutor(Interpreter):
         super().__init__(program)
         self.executed_paths = 0
         self.errors = 0
-        self.next_char = 96
+        self.next_char = 96 #idk about this for sure
         self.solver = Solver()
+		
+		#states waiting to be executed
         self.stateStack = []
         self.branchSelected = False 
     def getNextChar(self):
@@ -78,52 +70,28 @@ class SymbolicExecutor(Interpreter):
         return chr(self.next_char)
 
     def executeJump(self, state):
-        ##print(state.variables, state.values)
         jump = state.pc
         condval = state.eval(jump.get_condition())
-        ##print(condval)
-        ##print(type(condval))
-        ##print(jump)
+		
         if condval is None:
             state.error = f"Using unknown value: {jump.get_condition()}"
             return state
         assert isinstance(condval, (BoolRef, True, False))
-        #assert condval in [True, False, BoolRef], f"Invalid condition: {condval}"
         
         if isinstance(condval, BoolRef):
-            #here we need to maxe branching
-            #first make copy of current state for other branch
+            # here branching happens
+            # first make copy of current state for other branch
             otherState = state.copy()
-            ###print("jump states ", state, otherState)
-            #add new constraint
+            # add new constraint to first branch state
             state.constraints.append(condval)
-            #state.solver.add(condval)
             
-            #push negated constraint into other branch state
+            # push negated constraint into other branch state
             otherState.constraints.append(Not(condval))
-            ###print("constraints1 ", state.constraints)
-            ###print("constraints2 ", otherState.constraints)
-            #otherState.add(Not(condval))
-            #
-            #bool a,b = False, False
+			
+			# add states to stack; second member of tuple describes which block of jump
+			# will be accessed if constraints of state are satisfiable
             self.stateStack.append((state, 0))
             self.stateStack.append((otherState, 1))
-            #if (state.check() == sat):
-            #    #a = True
-            #    successorblock = jump.get_operand(0)
-            #    state.pc = successorblock[0]
-            #    self.stateStack.append(state)
-            #if (otherState.check() == sat):
-            #    #b = True
-            #    successorblock = jump.get_operand(1)
-            #    otherState.pc = successorblock[0]
-            #    self.stateStack.append(otherState)
-            #self.stateStack.append(Not(condval))
-            #self.solver.add(Not(condval))
-            #print(self.solver)
-        #successorblock = jump.get_operand(0 if condval else 1)
-
-        #state.pc = successorblock[0]
         self.branchSelected = False
         return None
 
@@ -136,8 +104,6 @@ class SymbolicExecutor(Interpreter):
             if value is None:
                 value = Int(self.getNextChar())
                 state.write(op, value)
-                #print(op, op.get_name(), value)
-                #state.error = f"Reading uninitialied variable: {op.get_name()}"
             state.set(instruction, value)
         elif ty == Instruction.STORE:
             value = state.eval(op)
@@ -168,9 +134,8 @@ class SymbolicExecutor(Interpreter):
         if ty == Instruction.MUL:
             result = a * b
         if ty == Instruction.DIV:
-            ##print(b)
+		    #did not do branching here since it was stated it is not necessary for this homework
             if b == Int(0):
-                ##print("okay")
                 state.error = f"Division by 0: {instruction}"
                 return state
             result = a / b
@@ -178,52 +143,16 @@ class SymbolicExecutor(Interpreter):
         state.set(instruction, result)
 
         return state
-
+		
+    #overridden to not print, just check values
     def executePrint(self, state):
         instruction = state.pc
 
-        vals = []
         for op in instruction.get_operands():
             val = state.eval(op)
             if val is None:
                 state.error = f"Using unknown value: {op}"
                 break
-
-            vals.append(val)
-
-        #if vals:
-            #print(" ".join(map(str, vals)))
-        return state
-
-    def executeCmp(self, state):
-        cmpinst = state.pc
-        predicate = cmpinst.get_predicate()
-        a = state.eval(cmpinst.get_operand(0))
-        if a is None:
-            state.error = f"Using unknown value: {cmpinst.get_operand(0)}"
-            return state
-        b = state.eval(cmpinst.get_operand(1))
-        if b is None:
-            state.error = f"Using unknown value: {cmpinst.get_operand(1)}"
-            return state
-
-        if predicate == Cmp.LT:
-            result = a < b
-        elif predicate == Cmp.LE:
-            result = a <= b
-        elif predicate == Cmp.GT:
-            result = a > b
-        elif predicate == Cmp.GE:
-            result = a >= b
-        elif predicate == Cmp.EQ:
-            result = a == b
-        elif predicate == Cmp.NE:
-            result = a != b
-        else:
-            raise RuntimeError(f"Invalid comparison: {cmpinst}")
-
-        state.set(cmpinst, result)
-
         return state
 
     def executeAssert(self, state):
@@ -233,20 +162,18 @@ class SymbolicExecutor(Interpreter):
             state.error = f"Using unknown value: {jump.get_condition()}"
             return state
         assert isinstance(condval, (BoolRef, bool))
-        #print("assert condval =", condval, type(condval))
-        #assert condval in [True, False], f"Invalid condition: {condval}"
+
         if condval == False:
-            #print("assert False")
             state.error = f"Assertion failed: {instruction}"
             return state
-        #TODO it should branch depending on satisfiability of condval
-        #if condval is False:
-        #    state.error = f"Assertion failed: {instruction}"
         if condval == True:
-            #print("assert True")
             return state
-        #print("assert symbolic")
-
+        #if condval is symbolic
+        
+		# braching happens here too but its not like in executeJump since
+		# only one of paths (constraints + assert constraint is sat) can continue
+		# other one (constraints + negation of assert constraint is sat) can not (raise error but counts as a path)
+		# its solved inside this function since we do not need to add anything to stack
         negState = state.copy()
         negState.constraints.append(Not(condval))
         self.solver.reset()
@@ -254,7 +181,6 @@ class SymbolicExecutor(Interpreter):
         for c in negState.constraints:
             self.solver.add(c)
         if (self.solver.check() == sat):
-            #print("its unsat")
             negState.error = "err"
             self.errors += 1
             self.executed_paths += 1 
@@ -266,23 +192,7 @@ class SymbolicExecutor(Interpreter):
             self.solver.add(c)
         if (self.solver.check() == unsat):
             state.error = "unsat expression"
-            #state.pc = state.pc.get_next_inst()
-            #if not state.pc:
-            #    return None
         return state
-        
-        #print(condval)
-        #print(type(condval))
-        #otherState = state.copy()
-        #add new constraint
-        #state.constraints.append(condval)
-        #push negated constraint into other branch state
-        #otherState.constraints.append(Not(condval))
-        #self.stateStack.append((state, None)) #maybe one should be enough and let this function handle it (either one branch continues (constraints remain) and one ends here, or both end here (only one error); if both continue we make two separate branches (probably))
-        #self.stateStack.append((otherState, None))
-
-        #self.branchSelected = False
-        return None
 
     def executeInstruction(self, state):
         instruction = state.pc
@@ -314,47 +224,25 @@ class SymbolicExecutor(Interpreter):
                 return None
 
         return state
+		
     def popNextSatState(self):
-        #print(len(self.stateStack))
         self.solver.reset()
-        pop = self.stateStack.pop() #maybe add another assert to this state(but eror shouldn't happen here; no instruction is executed here)
-        #print("pop ", pop)
+        pop = self.stateStack.pop()
         state = pop[0]
-        #if pop[1] == None:
-        #    self.solver.push()
-        #    for c in state.constraints:
-        #        self.solver.add(c)
-        #    #print("solver ", self.solver)
-        #    if (self.solver.check() == unsat):
-        #        print("its unsat")
-        #        state.error = "Assertion unsat"
-        #        self.branchSelected = True
-        #        return state
-        #        #we found new reachable branch TODO check whether this is ok, probably its ok ONLY if all branches created are leaves! (check HALT too)
-        #    else:
-        #        print("its sat")
-        #        self.branchSelected = True
-        #        state.pc = state.pc.get_next_inst()
-        #        if not state.pc:
-        #            return None
-        #        return state
-        #
-        #
-        #else:
         jump = state.pc
         successorblock = jump.get_operand(pop[1])
         self.solver.push()
         for c in state.constraints:
             self.solver.add(c)
-        #print("solver ", self.solver)
+
         if (self.solver.check() == sat):
             state.pc = successorblock[0]
             self.branchSelected = True
-            #we found new reachable branch TODO check whether this is ok, probably its ok ONLY if all branches created are leaves! (check HALT too)
         else:
             state = None
             self.branchSelected = False
         return state
+		
     def run(self):
         entryblock = program.get_entry()
         state = SymbolicExecutionState(entryblock[0])
@@ -364,15 +252,11 @@ class SymbolicExecutor(Interpreter):
             if state and not state.error:
                 state = self.executeInstruction(state)
             if state and state.error:
-                #print("after execution in error")
-                #TODO pop last constraint and continue in other branch maybe increase execued_paths too
-                #state.error = None
                 self.errors += 1
                 self.executed_paths += 1
                 state = None
                 self.branchSelected = False
             if state == None and self.branchSelected:
-                #print("after execution in finished")
                 self.branchSelected = False
                 self.executed_paths += 1
 
@@ -380,33 +264,9 @@ class SymbolicExecutor(Interpreter):
                     state = self.popNextSatState()
 
             elif state == None and not self.branchSelected and len(self.stateStack) > 0:
-                #print("after execution in branching point")
                 while (state == None and len(self.stateStack) > 0):
                     state = self.popNextSatState()
-            #if state == "branch":
-            #    break;
-            #state = self.executeInstruction(state)
-            #if state == "branch":
-            #    continue;
-            #if state and state.error:
-            #    #TODO pop last constraint and continue in other branch maybe increase execued_paths too
-            #    #state.error = None
-            #    self.errors += 1
-            #    #self.executed_paths += 1
-            #    state = None
-            #if state == None and self.branchSelected:
-            #    state = self.popNextSatState()
-            #    self.executed_paths += 1
-                        
-            #if state and state.error:
-            #    #TODO pop last constraint and continue in other branch maybe increase execued_paths too
-            #    #state.error = None
-            #    self.errors += 1
-            #    #self.executed_paths += 1
-            #    state = None
-
-        #TODO?
-
+					
         print(f"Executed paths: {self.executed_paths}")
         print(f"Error paths: {self.errors}")
 
