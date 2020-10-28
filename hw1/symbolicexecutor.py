@@ -65,9 +65,6 @@ class SymbolicExecutor(Interpreter):
         #states waiting to be executed
         self.stateStack = []
         self.branchSelected = False 
-    def getNextChar(self):
-        self.next_char += 1
-        return chr(self.next_char)
 
     def executeJump(self, state):
         jump = state.pc
@@ -102,7 +99,7 @@ class SymbolicExecutor(Interpreter):
         if ty == Instruction.LOAD:
             value = state.read(op)
             if value is None:
-                value = Int(self.getNextChar())
+                value = Int("x")
                 state.write(op, value)
             state.set(instruction, value)
         elif ty == Instruction.STORE:
