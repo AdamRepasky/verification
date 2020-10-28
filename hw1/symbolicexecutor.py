@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+#the main file to run for symbolic execution homework
 from language import Instruction, Variable, Cmp
 from interpreter import ExecutionState, Interpreter
 from z3 import *
