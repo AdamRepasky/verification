@@ -1,0 +1,61 @@
+--this is what I did for maze03.csv, I kind of ran out of time, since it all took more time for me than expected, I didn't finish my translating script
+--idea with script was to create graph out of accessible fields, run BFS on it and contract(?) nodes without any symbol to one edge. This wouldn't be applyed when poison or antidote would be found, out of regular empty paths there would become paths marked as p1, p2, p3, so remaining ticks of poison could be watched by some VARs.
+MODULE main
+ VAR
+   cheese : boolean;
+   key : boolean;
+   door : boolean;
+   atdoor : boolean;
+   poison : boolean;
+   antidote : boolean;
+   trap : boolean;
+ ASSIGN
+   init(cheese) := FALSE;
+   init(key) := FALSE;
+   init(door):= FALSE;
+   init(poison) := FALSE;
+   init(antidote) := FALSE;
+   init(trap) := FALSE;   
+   init(atdoor) := FALSE;
+   next(key) :=
+      case
+        key = FALSE : TRUE;
+        TRUE : key;
+      esac;
+   next(door) :=
+      case
+        key & !door : TRUE;
+        TRUE : FALSE;
+      esac;
+   next(cheese) :=
+     case
+       key & door : TRUE;
+       TRUE : cheese;
+     esac;
+   next(poison) := 
+     case
+       TRUE : poison;
+     esac;
+   next(antidote) :=
+     case
+       TRUE : antidote;
+     esac;
+   next(trap) :=
+     case
+       TRUE : trap;
+     esac;
+   next(atdoor) :=
+      case
+        next(door) : TRUE;
+        TRUE : FALSE;
+      esac;
+SPEC       AG (!key & !door & !poison & !cheese & !antidote & !trap) --1
+SPEC       AG (poison -> (AF antidote)) --2
+SPEC       AG (poison -> EF antidote) --3
+SPEC       EF (poison & EF antidote) --4
+SPEC       AG (door -> !key) --5
+SPEC       AG (door -> (EG(!trap & !poison) & EF(cheese))) --for mazes with more doors they would have been considered here too
+SPEC       AG (door -> key) --7
+SPEC       EF (atdoor) --8
+SPEC       EF (door) -- 9
+SPEC       EF (cheese) --10
