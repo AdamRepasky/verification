@@ -27,9 +27,9 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
     \param completeness   set to True to perform completeness check
     """
 
-    self.solver = Solver()
-    self.solver.push()
-    self.solver.add(init)
+    solver = Solver()
+    solver.push()
+    solver.add(init)
     k = 0
     
     # Implement the BMC algorithm here
@@ -37,7 +37,7 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
-        print(self.solver)
+        print(solver)
         k += 1
         
     
