@@ -8,7 +8,7 @@ from bmcparsers.z3parser import Z3Parser
 from z3 import *
 #from bmcparsers.pysmtparser import PySMTParser
 #from pysmt.shortcuts import *
-
+from math import inf
 
 def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False):
     """
@@ -27,10 +27,20 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
     \param completeness   set to True to perform completeness check
     """
 
+    self.solver = Solver()
+    self.solver.push()
+    self.solver.add(init)
     k = 0
-
+    
     # Implement the BMC algorithm here
     print(maxk, xs, xns, prp, init, trans, backward, completness)
+    if (maxk == None):
+        maxk = math.inf
+    while (k < maxk):
+        print(self.solver)
+        k += 1
+        
+    
     print(f"Finished with k={k}.")
     return True
 
