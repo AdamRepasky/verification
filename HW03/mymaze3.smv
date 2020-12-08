@@ -1,5 +1,3 @@
---this is what I did for maze03.csv, I kind of ran out of time, since it all took more time for me than expected, I didn't finish my translating script
---idea with script was to create graph out of accessible fields, run BFS on it and contract(?) nodes without any symbol to one edge. This wouldn't be applyed when poison or antidote would be found, out of regular empty paths there would become paths marked as p1, p2, p3, so remaining ticks of poison could be watched by some VARs.
 MODULE main
   VAR
     m : boolean;
@@ -38,13 +36,13 @@ MODULE main
         TRUE : c;
       esac;
 
-SPEC       EG (!m) --1
+SPEC       AG (!k1 & !d1 & !p & !c & !a & !t) --1 for mazes with more doors/keys they would have been considered here too which probably isn't too good
 SPEC       AG (p -> (AF a)) --2
 SPEC       AG (p -> EF a) --3
 SPEC       EF (p & EF a) --4
 SPEC       AG (d1 -> !k1) --5
-SPEC       AG (d1 -> (EG(!t & !p) & EF(c))) --for mazes with more doors they would have been considered here too
+SPEC       AG (d1 -> (EG(!t & !p) & EF(c))) --6 for mazes with more doors they would have been considered here too
 SPEC       AG (d1 -> k1) --7
---SPEC       EF (atdoor) --8
+--SPEC      --8
 SPEC       EF (d1) -- 9
 SPEC       EF (c) --10

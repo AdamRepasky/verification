@@ -1,0 +1,2 @@
+prp.txt sat
+prp2.txt unsat

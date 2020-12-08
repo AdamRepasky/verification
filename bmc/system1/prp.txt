@@ -1,0 +1,5 @@
+a b c
+a !b !c
+b !c !a
+c !b !a
+!a !b !c

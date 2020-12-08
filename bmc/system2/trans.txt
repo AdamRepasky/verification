@@ -1,0 +1,8 @@
+x y !xn
+x y !yn
+x !y !xn !yn
+x xn yn !y
+y xn !x
+y yn !x
+xn !x !y
+yn !x !y

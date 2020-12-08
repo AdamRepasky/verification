@@ -1,0 +1,7 @@
+!x1 xn2
+!x2 xn3
+!x3 xn4
+!x4 xn1
+x4 !xn2
+x1 !xn2
+x2 !xn3
