@@ -33,7 +33,7 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
     k = 0
     
     # Implement the BMC algorithm here
-    print(maxk, xs, xns, prp, init, trans, backward, completness)
+    print(maxk, xs, xns, prp, init, trans, backward, completeness)
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
