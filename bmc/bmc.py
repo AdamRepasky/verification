@@ -32,54 +32,58 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
 
     solver = Solver()
     solver.push()
+   
+    #choses and prepares initial state and property 
+    initial = simplify(Not(prp)) if backward else simplify(init)
+    negPrp = simplify(init) if backward else simplify(Not(prp))
     
-    initial = simplify(init)
-    negPrp = simplify(Not(prp))
-
+    #set up variables for initial state
     currVals = []
     for i in range(len(xs)):
         currVals.append(Bool(chr( ord("a") + i) + str(k)))
 
-
+    #substitute them
     for i in range(len(xs)):
         initial = substitute(initial, (xs[i], currVals[i]))
         negPrp = substitute(negPrp, (xs[i], currVals[i]))
-    #loopSolver.add()
 
     solver.add(initial)
     solver.push()    
     solver.add(negPrp)    
     
-
-    states = []
-    states.append(currVals)
-
-    # Implement the BMC algorithm here
+    #state bank for completness
+    if completeness:
+        states = []
+        states.append(currVals)
 
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
-
+        #setup new vars for next state
         nextVals = []
         for i in range(len(xs)):
             nextVals.append(Bool(chr( ord("a") + i) + str(k + 1)))
-
-        print(currVals)
-        print(nextVals)
-        print(solver)
-        print(solver.check())
+        
+        #first checking without any transition
         if (solver.check() == sat):
             print("The property does not hold.")
             print(f"Finished with k={k}.")
             return False
-       
+
+        #remove negPrp constraint to substitute with next state vars 
         solver.pop()
         t = simplify(trans)
         negPrp = simplify(Not(prp))
         for i in range(len(xs)):
-            t = substitute(t, (xs[i], currVals[i]), (xns[i], nextVals[i]))
-            negPrp = substitute(negPrp, (xs[i], nextVals[i])) 
-
+            if backward:
+                #this im not sure
+                t = substitute(t, (xs[i], nextVals[i]), (xns[i], currVals[i]))
+                negPrp = substitute(negPrp, (xs[i], nextVals[i])) 
+            else:
+                #this should work
+                t = substitute(t, (xs[i], currVals[i]), (xns[i], nextVals[i]))
+                negPrp = substitute(negPrp, (xs[i], nextVals[i]))
+        #this chcecks for appearence of the same state before
         if completeness:
             diff = False
             for state in states:
@@ -92,7 +96,7 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
                 if (solver.check() == unsat):
                     print("The property holds.")
                     print(f"Finished with k={k}.")
-                    return True
+                    return 0
             states.append(nextVals)
 
         solver.push()
@@ -107,11 +111,11 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
 
     if (solver.check() == unsat):
         print("Unknown.")
-    else:    
-        print("The property holds.")
+        print(f"Finished with k={k}.")
+        return 1   
+    print("The property holds.")
     print(f"Finished with k={k}.")
-
-    return True
+    return 0
 
 if __name__ == "__main__":
     from sys import argv
