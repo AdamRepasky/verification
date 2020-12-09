@@ -35,7 +35,7 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
 
     solver = Solver()
     solver.push()
-    solver.add(queue.pop(0))
+    
     
     # Implement the BMC algorithm here
     print(maxk, xs, xns, prp, init, trans, backward, completeness)
@@ -43,7 +43,7 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
         maxk = math.inf
     while (k < maxk):
 
-        t = queue.pop()
+        t = queue.pop(0)
         for transition in trans:
             t = And(t, transition)
             solver.push()
