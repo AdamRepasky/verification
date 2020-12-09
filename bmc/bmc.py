@@ -47,7 +47,7 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
         print(solver)
         solver.pop()
         for i in range(len(xs)):  
-            t = substitute(t, (xs[i], xns[i]))
+            t = substitute(t, (xns[i], xs[i]))
             
         k += 1
         
