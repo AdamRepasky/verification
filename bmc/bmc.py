@@ -33,25 +33,39 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
     solver = Solver()
     solver.push()
     solver.add(init)
+    solver.add(prp)    
 
     t = trans
     
     # Implement the BMC algorithm here
-    print(maxk, xs, xns, prp, init, trans, backward, completeness)
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
         
         solver.push()
         solver.add(t)
+        if completeness:
+            print("simplifyed")
+            print(simplify(t))
+            print("simplifyed")
+            #for i in range(len(xs)):
+            #    solver.add(xns[i] != xs[i])
+
         print(solver)
-        solver.pop()
+        print(solver.check())
+        if (solver.check() == unsat):
+            print("The property does not hold.")
+            print(f"Finished with k={k}.")
+            return False
+        #solver.pop()
         for i in range(len(xs)):  
-            t = substitute(t, (xns[i], xs[i]))
+            t = substitute(t, (xns[i], xs[i]), (xs[i], xns[i]))
             
         k += 1
-        
-    
+    if (solver.check() == sat):
+        print("Unknown.")
+    else:    
+        print("The property holds.")
     print(f"Finished with k={k}.")
     return True
 
