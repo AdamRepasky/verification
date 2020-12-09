@@ -27,23 +27,36 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
     \param completeness   set to True to perform completeness check
     """
 
+
+    k = 0
+
+    queue = []
+    queue.append(init)
+
     solver = Solver()
     solver.push()
-    solver.add(init)
-    k = 0
+    solver.add(queue.pop(0))
     
     # Implement the BMC algorithm here
     print(maxk, xs, xns, prp, init, trans, backward, completeness)
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
-        print(solver)
+
+        t = queue.pop()
+        for transition in trans:
+            t = And(t, transition)
+            solver.push()
+            solver.add(t)
+            print(solver)
+            queue.append(t)
+            solver.pop()
+            
         k += 1
         
     
     print(f"Finished with k={k}.")
     return True
-
 
 if __name__ == "__main__":
     from sys import argv
