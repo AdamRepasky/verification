@@ -32,41 +32,62 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
 
     solver = Solver()
     solver.push()
-    solver.add(init)
-    solver.add(prp)    
+    solver.add(simplify(init))
+    solver.push()
+    
+    negPrp = simplify(Not(prp))
+    solver.add(negPrp)    
 
     t = trans
     
     # Implement the BMC algorithm here
+
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
         
-        solver.push()
-        solver.add(t)
+        #solver.push()
+        #solver.add(simplify(t))
         if completeness:
-            print("simplifyed")
-            print(simplify(t))
-            print("simplifyed")
+            pass
             #for i in range(len(xs)):
             #    solver.add(xns[i] != xs[i])
-
+        #print(simplify(Not(And(Or(Bool('x'))))))
         print(solver)
         print(solver.check())
-        if (solver.check() == unsat):
+        if (solver.check() == sat):
             print("The property does not hold.")
             print(f"Finished with k={k}.")
             return False
-        #solver.pop()
+        print("pop: ", solver.pop())
+        solver.push()
+        solver.add(simplify(t))
+
         for i in range(len(xs)):  
-            t = substitute(t, (xns[i], xs[i]), (xs[i], xns[i]))
-            
+            s = substitute(t, (xns[i], xs[i]), (xs[i], xns[i]))
+            if completeness:
+                constraints = solver.assertions()
+                #constraints = simplify(constraints)
+                print(type(constraints))
+                print("c:", constraints, "ns: ", solver.assertions())
+                print("t: ", t)
+                print("s: ", s)
+                if s == t:
+                    print("The property holds.")
+                    print(f"Finished with k={k}.")
+                    return True
+            t = s
+            negPrp = substitute(negPrp, (xns[i], xs[i]), (xs[i], xns[i]))
+        solver.push()
+        solver.add(negPrp)
+   
         k += 1
-    if (solver.check() == sat):
+    if (solver.check() == unsat):
         print("Unknown.")
     else:    
         print("The property holds.")
     print(f"Finished with k={k}.")
+
     return True
 
 if __name__ == "__main__":
