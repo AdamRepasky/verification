@@ -32,50 +32,79 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
 
     solver = Solver()
     solver.push()
-    solver.add(simplify(init))
-    solver.push()
     
+    initial = simplify(init)
     negPrp = simplify(Not(prp))
-    solver.add(negPrp)    
 
-    t = trans
+    currVals = []
+    for i in range(len(xs)):
+        currVals.append(Bool(chr( ord("a") + i) + str(k)))
+
+
+    for i in range(len(xs)):
+        initial = substitute(initial, (xs[i], currVals[i]))
+        negPrp = substitute(negPrp, (xs[i], currVals[i]))
+    #loopSolver.add()
+
+    solver.add(initial)
+    solver.push()    
+    solver.add(negPrp)    
     
+
+    states = []
+    states.append(currVals)
+
     # Implement the BMC algorithm here
 
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
+
+        nextVals = []
+        for i in range(len(xs)):
+            nextVals.append(Bool(chr( ord("a") + i) + str(k + 1)))
+
+        print(currVals)
+        print(nextVals)
         print(solver)
         print(solver.check())
         if (solver.check() == sat):
             print("The property does not hold.")
             print(f"Finished with k={k}.")
             return False
-
-
-
+       
         solver.pop()
-        s = None
+        t = simplify(trans)
+        negPrp = simplify(Not(prp))
+        for i in range(len(xs)):
+            t = substitute(t, (xs[i], currVals[i]), (xns[i], nextVals[i]))
+            negPrp = substitute(negPrp, (xs[i], nextVals[i])) 
 
-        for i in range(len(xs)):  
-            s = substitute(t, (xns[i], xs[i]), (xs[i], xns[i]))
-            negPrp = substitute(negPrp, (xns[i], xs[i]), (xs[i], xns[i]))
-
-        b = simplify(t)
-        t = simplify(And(t,s))
-        print("t2: ", t)
-        print("b : ", b)
         if completeness:
-            if simplify(t) == simplify(b):
-                print("The property holds.")
-                print(f"Finished with k={k}.")
-                return True
+            diff = False
+            for state in states:
+                b = True
+                for i in range(len(state)):
+                    b = And(b, (state[i] == nextVals[i]))
+                diff = Or(diff, b)
+
+                solver.add(Not(diff))
+                if (solver.check() == unsat):
+                    print("The property holds.")
+                    print(f"Finished with k={k}.")
+                    return True
+            states.append(nextVals)
 
         solver.push()
         solver.add(t)
+
+        solver.push()
         solver.add(negPrp)
+
+        currVals = nextVals
    
         k += 1
+
     if (solver.check() == unsat):
         print("Unknown.")
     else:    
