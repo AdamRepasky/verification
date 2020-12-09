@@ -30,27 +30,24 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
 
     k = 0
 
-    queue = []
-    queue.append(init)
-
     solver = Solver()
     solver.push()
-    
+    solver.add(init)
+
+    t = trans
     
     # Implement the BMC algorithm here
     print(maxk, xs, xns, prp, init, trans, backward, completeness)
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
-
-        t = queue.pop(0)
-        for transition in trans:
-            t = And(t, transition)
-            solver.push()
-            solver.add(t)
-            print(solver)
-            queue.append(t)
-            solver.pop()
+        
+        solver.push()
+        solver.add(t)
+        print(solver)
+        solver.pop()
+        for i in range(len(xs)):  
+            t = substitute(t, (xs[i], xns[i]))
             
         k += 1
         
