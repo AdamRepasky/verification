@@ -73,14 +73,14 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
         #remove negPrp constraint to substitute with next state vars 
         solver.pop()
         t = simplify(trans)
-        negPrp = simplify(Not(prp))
+        negPrp = simplify(init) if backward else simplify(Not(prp))
+
         for i in range(len(xs)):
             if backward:
-                #this im not sure
+                #to revert direction
                 t = substitute(t, (xs[i], nextVals[i]), (xns[i], currVals[i]))
                 negPrp = substitute(negPrp, (xs[i], nextVals[i])) 
             else:
-                #this should work
                 t = substitute(t, (xs[i], currVals[i]), (xns[i], nextVals[i]))
                 negPrp = substitute(negPrp, (xs[i], nextVals[i]))
         #this chcecks for appearence of the same state before
