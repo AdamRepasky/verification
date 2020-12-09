@@ -45,40 +45,34 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
     if (maxk == None):
         maxk = math.inf
     while (k < maxk):
-        
-        #solver.push()
-        #solver.add(simplify(t))
-        if completeness:
-            pass
-            #for i in range(len(xs)):
-            #    solver.add(xns[i] != xs[i])
-        #print(simplify(Not(And(Or(Bool('x'))))))
         print(solver)
         print(solver.check())
         if (solver.check() == sat):
             print("The property does not hold.")
             print(f"Finished with k={k}.")
             return False
-        print("pop: ", solver.pop())
-        solver.push()
-        solver.add(simplify(t))
+
+
+
+        solver.pop()
+        s = None
 
         for i in range(len(xs)):  
             s = substitute(t, (xns[i], xs[i]), (xs[i], xns[i]))
-            if completeness:
-                constraints = solver.assertions()
-                #constraints = simplify(constraints)
-                print(type(constraints))
-                print("c:", constraints, "ns: ", solver.assertions())
-                print("t: ", t)
-                print("s: ", s)
-                if s == t:
-                    print("The property holds.")
-                    print(f"Finished with k={k}.")
-                    return True
-            t = s
             negPrp = substitute(negPrp, (xns[i], xs[i]), (xs[i], xns[i]))
+
+        b = simplify(t)
+        t = simplify(And(t,s))
+        print("t2: ", t)
+        print("b : ", b)
+        if completeness:
+            if simplify(t) == simplify(b):
+                print("The property holds.")
+                print(f"Finished with k={k}.")
+                return True
+
         solver.push()
+        solver.add(t)
         solver.add(negPrp)
    
         k += 1
@@ -93,7 +87,6 @@ def bmc(maxk, xs, xns, prp, init, trans, backward = False, completeness = False)
 if __name__ == "__main__":
     from sys import argv
     from os.path import isfile
-    print("hello")
     args = parse_cmd()
     parser = Z3Parser()
     #parser = PySMTParser()
